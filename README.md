@@ -49,9 +49,7 @@ curl http://localhost:8000/api/products/
 
 ## Documentación
 
-- [Guía de Inicio Rápido](microservices/GUIA_INICIO_RAPIDO.md) - Instrucciones detalladas para comenzar
 - [Arquitectura](microservices/ARQUITECTURA.md) - Documentación técnica de la arquitectura
-- [Shipping Service](microservices/SHIPPING_SERVICE.md) - Documentación del servicio de guías de envío
 - [README de Microservicios](microservices/README.md) - Descripción general de los microservicios
 
 ## Puertos de los Servicios
@@ -92,7 +90,4 @@ Todos los endpoints están disponibles a través del API Gateway en `http://loca
 - `GET /api/shipping/guides/` - Listar guías de envío
 - `GET /api/shipping/guides/statistics/` - Estadísticas de generación
 
-## Desarrollo
-
-Para más información sobre desarrollo, despliegue y arquitectura, consulta la documentación en la carpeta `microservices/`.
 
