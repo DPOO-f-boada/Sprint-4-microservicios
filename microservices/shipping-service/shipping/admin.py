@@ -9,9 +9,8 @@ class CarrierAdmin(admin.ModelAdmin):
 
 @admin.register(ShippingGuide)
 class ShippingGuideAdmin(admin.ModelAdmin):
-    list_display = ['guide_number', 'order_id', 'carrier', 'status', 'generation_time_seconds', 
-                    'meets_performance_ASR', 'created_at']
-    list_filter = ['status', 'carrier', 'meets_performance_ASR', 'created_at']
+    list_display = ['guide_number', 'order_id', 'carrier', 'status', 'created_at']
+    list_filter = ['status', 'carrier', 'created_at']
     search_fields = ['guide_number', 'order_id', 'recipient_name']
-    readonly_fields = ['generation_time_seconds', 'meets_performance_ASR', 'generated_at']
+    readonly_fields = ['generated_at']
 

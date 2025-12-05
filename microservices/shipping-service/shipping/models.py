@@ -7,7 +7,7 @@ class Carrier(models.Model):
     api_endpoint = models.URLField(blank=True, null=True)
     api_key = models.CharField(max_length=200, blank=True, null=True)
     is_active = models.BooleanField(default=True)
-    response_time_avg = models.FloatField(default=3.0, help_text="Tiempo promedio de respuesta en segundos")
+    response_time_avg = models.FloatField(default=3.0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -24,13 +24,11 @@ class ShippingGuide(models.Model):
     PENDING = 'PENDING'
     GENERATED = 'GENERATED'
     FAILED = 'FAILED'
-    TIMEOUT = 'TIMEOUT'
     
     STATUS_CHOICES = [
         (PENDING, 'Pendiente'),
         (GENERATED, 'Generada'),
         (FAILED, 'Fallida'),
-        (TIMEOUT, 'Timeout'),
     ]
     
     order_id = models.IntegerField(help_text="ID del pedido en el servicio de orders")
@@ -47,8 +45,6 @@ class ShippingGuide(models.Model):
     declared_value = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     carrier_response = models.JSONField(blank=True, null=True, help_text="Respuesta completa de la transportadora")
     carrier_tracking_number = models.CharField(max_length=100, blank=True, null=True)
-    generation_time_seconds = models.FloatField(null=True, blank=True, help_text="Tiempo que tomó generar la guía")
-    meets_performance_ASR = models.BooleanField(default=False, help_text="Cumple con el ASR de 8 segundos")
     error_message = models.TextField(blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)

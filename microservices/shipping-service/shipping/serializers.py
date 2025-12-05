@@ -21,13 +21,11 @@ class ShippingGuideSerializer(serializers.ModelSerializer):
             'status', 'status_display', 'origin_address', 'destination_address',
             'recipient_name', 'recipient_phone', 'recipient_document',
             'weight_kg', 'dimensions', 'declared_value',
-            'carrier_tracking_number', 'generation_time_seconds',
-            'meets_performance_ASR', 'error_message',
+            'carrier_tracking_number', 'error_message',
             'created_at', 'updated_at', 'generated_at'
         ]
         read_only_fields = [
-            'created_at', 'updated_at', 'generated_at', 
-            'generation_time_seconds', 'meets_performance_ASR'
+            'created_at', 'updated_at', 'generated_at'
         ]
 
 class ShippingGuideCreateSerializer(serializers.Serializer):

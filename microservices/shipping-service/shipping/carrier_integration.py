@@ -12,29 +12,12 @@ def generate_guide_number(carrier_name, order_id):
     timestamp = int(timezone.now().timestamp())
     return f"{prefix}{order_id:06d}{timestamp % 10000:04d}"
 
-def simulate_carrier_api_call(carrier, shipping_data, timeout=8):
-    """
-    Simula una llamada a la API de una transportadora.
-    En producción, esto se reemplazaría con llamadas reales a las APIs.
-    
-    Args:
-        carrier: Instancia de Carrier
-        shipping_data: Diccionario con datos del envío
-        timeout: Tiempo máximo de espera en segundos
-    
-    Returns:
-        dict: Respuesta de la transportadora con tracking_number y otros datos
-    """
-    start_time = time.time()
+def simulate_carrier_api_call(carrier, shipping_data):
+    """Simula una llamada a la API de una transportadora."""
     base_time = carrier.response_time_avg
     variation = random.uniform(0.5, 1.5)
     simulated_time = base_time * variation
-    
-    if simulated_time > timeout:
-        simulated_time = timeout - 0.5
-    
-    time.sleep(min(simulated_time, timeout - 0.1))
-    elapsed = time.time() - start_time
+    time.sleep(simulated_time)
     
     if random.random() < 0.05:
         raise Exception("Error de conexión con la transportadora")
@@ -48,7 +31,6 @@ def simulate_carrier_api_call(carrier, shipping_data, timeout=8):
         'tracking_number': tracking_number,
         'carrier_reference': f"{carrier.name.upper()}-{guide_number}",
         'estimated_delivery_days': random.randint(2, 7),
-        'response_time': elapsed,
         'carrier_response': {
             'status': 'accepted',
             'message': 'Guía generada exitosamente',
@@ -57,14 +39,10 @@ def simulate_carrier_api_call(carrier, shipping_data, timeout=8):
         }
     }
 
-def call_real_carrier_api(carrier, shipping_data, timeout=8):
-    """
-    Llama a la API real de una transportadora.
-    Si carrier.api_endpoint está configurado, hace la llamada real.
-    De lo contrario, simula la respuesta.
-    """
+def call_real_carrier_api(carrier, shipping_data):
+    """Llama a la API real de una transportadora o simula la respuesta."""
     if not carrier.api_endpoint or not carrier.api_key:
-        return simulate_carrier_api_call(carrier, shipping_data, timeout)
+        return simulate_carrier_api_call(carrier, shipping_data)
     
     try:
         payload = {
@@ -89,7 +67,7 @@ def call_real_carrier_api(carrier, shipping_data, timeout=8):
                 'Authorization': f'Bearer {carrier.api_key}',
                 'Content-Type': 'application/json'
             },
-            timeout=timeout
+            timeout=30
         )
         
         if response.status_code == 200:
@@ -97,28 +75,12 @@ def call_real_carrier_api(carrier, shipping_data, timeout=8):
         else:
             raise Exception(f"Error de la transportadora: {response.status_code}")
             
-    except requests.exceptions.Timeout:
-        raise Exception("Timeout al comunicarse con la transportadora")
     except requests.exceptions.RequestException as e:
         raise Exception(f"Error de conexión: {str(e)}")
 
-def generate_shipping_guide(carrier_id, shipping_data, timeout=8):
-    """
-    Genera una guía de envío con una transportadora.
-    Garantiza respuesta en máximo 8 segundos según ASR.
-    
-    Args:
-        carrier_id: ID de la transportadora
-        shipping_data: Diccionario con datos del envío
-        timeout: Tiempo máximo en segundos (default: 8 según ASR)
-    
-    Returns:
-        tuple: (ShippingGuide, success: bool, error_message: str)
-    """
+def generate_shipping_guide(carrier_id, shipping_data):
+    """Genera una guía de envío con una transportadora."""
     from django.utils import timezone
-    import time
-    
-    start_time = time.time()
     
     try:
         carrier = Carrier.objects.get(id=carrier_id, is_active=True)
@@ -140,34 +102,21 @@ def generate_shipping_guide(carrier_id, shipping_data, timeout=8):
     )
     
     try:
-        response = call_real_carrier_api(carrier, shipping_data, timeout)
-        elapsed = time.time() - start_time
+        response = call_real_carrier_api(carrier, shipping_data)
         
         shipping_guide.guide_number = response.get('guide_number')
         shipping_guide.carrier_tracking_number = response.get('tracking_number')
         shipping_guide.carrier_response = response
         shipping_guide.status = ShippingGuide.GENERATED
-        shipping_guide.generation_time_seconds = round(elapsed, 3)
-        shipping_guide.meets_performance_ASR = elapsed <= timeout
         shipping_guide.generated_at = timezone.now()
         shipping_guide.save()
         
         return shipping_guide, True, None
         
     except Exception as e:
-        elapsed = time.time() - start_time
-        
-        if elapsed >= timeout:
-            shipping_guide.status = ShippingGuide.TIMEOUT
-            error_msg = f"Timeout: La transportadora no respondió en {timeout} segundos"
-        else:
-            shipping_guide.status = ShippingGuide.FAILED
-            error_msg = str(e)
-        
-        shipping_guide.error_message = error_msg
-        shipping_guide.generation_time_seconds = round(elapsed, 3)
-        shipping_guide.meets_performance_ASR = False
+        shipping_guide.status = ShippingGuide.FAILED
+        shipping_guide.error_message = str(e)
         shipping_guide.save()
         
-        return shipping_guide, False, error_msg
+        return shipping_guide, False, str(e)
 

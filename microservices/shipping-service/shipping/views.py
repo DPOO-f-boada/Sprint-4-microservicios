@@ -1,8 +1,6 @@
-import time
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from django.conf import settings
 from .models import Carrier, ShippingGuide
 from .serializers import CarrierSerializer, ShippingGuideSerializer, ShippingGuideCreateSerializer
 from .carrier_integration import generate_shipping_guide
@@ -52,37 +50,26 @@ def shipping_guide_by_order(request, order_id):
 
 @api_view(['POST'])
 def generate_guide(request):
-    """
-    Generar una guía de envío con una transportadora.
-    ASR: Debe responder en máximo 8 segundos.
-    """
-    start_time = time.time()
-    
+    """Generar una guía de envío con una transportadora."""
     serializer = ShippingGuideCreateSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     data = serializer.validated_data
-    timeout = settings.SHIPPING_GUIDE_TIMEOUT
     
     guide, success, error_message = generate_shipping_guide(
         carrier_id=data['carrier_id'],
-        shipping_data=data,
-        timeout=timeout
+        shipping_data=data
     )
     
     if not guide:
         return Response({'error': error_message}, status=status.HTTP_400_BAD_REQUEST)
     
-    elapsed = time.time() - start_time
-    
     response_serializer = ShippingGuideSerializer(guide)
     
     response_data = {
         'guide': response_serializer.data,
-        'success': success,
-        'generation_time_seconds': round(elapsed, 3),
-        'meets_performance_ASR': elapsed <= timeout
+        'success': success
     }
     
     if not success:
@@ -94,28 +81,15 @@ def generate_guide(request):
 
 @api_view(['GET'])
 def guide_statistics(request):
-    """Estadísticas de generación de guías (para monitoreo del ASR)"""
-    from django.db.models import Avg
-    
+    """Estadísticas de generación de guías"""
     total = ShippingGuide.objects.count()
     generated = ShippingGuide.objects.filter(status=ShippingGuide.GENERATED).count()
     failed = ShippingGuide.objects.filter(status=ShippingGuide.FAILED).count()
-    timeout = ShippingGuide.objects.filter(status=ShippingGuide.TIMEOUT).count()
-    meets_asr = ShippingGuide.objects.filter(meets_performance_ASR=True).count()
-    
-    avg_time = ShippingGuide.objects.filter(
-        generation_time_seconds__isnull=False
-    ).aggregate(
-        avg=Avg('generation_time_seconds')
-    )['avg'] or 0
     
     return Response({
         'total_guides': total,
         'generated': generated,
         'failed': failed,
-        'timeout': timeout,
-        'meets_performance_ASR': meets_asr,
-        'asr_compliance_rate': round((meets_asr / total * 100) if total > 0 else 0, 2),
-        'average_generation_time_seconds': round(avg_time, 3)
+        'success_rate': round((generated / total * 100) if total > 0 else 0, 2)
     })
 

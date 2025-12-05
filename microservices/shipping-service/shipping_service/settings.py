@@ -38,6 +38,14 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
     },
 ]
 
@@ -83,5 +91,4 @@ CORS_ALLOW_CREDENTIALS = True
 
 ORDERS_SERVICE_URL = os.environ.get('ORDERS_SERVICE_URL', 'http://orders-service:8004')
 INVENTORY_SERVICE_URL = os.environ.get('INVENTORY_SERVICE_URL', 'http://inventory-service:8003')
-SHIPPING_GUIDE_TIMEOUT = 8
 

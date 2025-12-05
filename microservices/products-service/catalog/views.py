@@ -44,6 +44,15 @@ def product_by_name(request, product_name):
     except Product.DoesNotExist:
         return Response({'error': 'Producto no encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
+@api_view(['POST'])
+def create_product(request):
+    """Crear un producto nuevo"""
+    serializer = ProductSerializer(data=request.data)
+    if serializer.is_valid():
+        product = serializer.save()
+        return Response(ProductSerializer(product).data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 @api_view(['GET'])
 def supplier_list(request):
     """Listar todos los proveedores"""

@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROVESI - Sistema Logístico</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.25);
+        }
+        .nav-link { color: rgba(255,255,255,0.9) !important; font-weight: 500; }
+        .nav-link.active { color: #fff !important; }
+        .role-badge {
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 0.8rem;
+            color: white;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 50px 40px;
+            margin: 25px 0;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(102, 126, 234, 0.35);
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -30%;
+            right: -20%;
+            width: 60%;
+            height: 160%;
+            background: radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 60%);
+            transform: rotate(20deg);
+        }
+        .hero h1 { font-weight: 700; margin-bottom: 10px; }
+        .hero p { opacity: 0.9; max-width: 560px; }
+        .card-shadow {
+            border: none;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+        }
+        .section-title { font-weight: 700; margin-bottom: 6px; }
+        .muted { color: #6c757d; }
+        .pill {
+            background: #f8f9fe;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+        }
+        .table td, .table th { vertical-align: middle; }
+        .toast-box {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            min-width: 260px;
+            z-index: 9999;
+        }
+        .toast-box .toast {
+            background: #111827;
+            color: #e5e7eb;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .profile-popover {
+            position: absolute;
+            right: 20px;
+            top: 72px;
+            width: 340px;
+            background: #fff;
+            color: #111827;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            border: 1px solid #e5e7eb;
+            padding: 16px;
+            z-index: 10;
+        }
+        .profile-popover .badge-info { font-size: 12px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <a class="navbar-brand d-flex align-items-center" href="#">
+            <i class="fas fa-truck-moving mr-2"></i> PROVESI
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navMenu">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item"><a class="nav-link active" data-section="home" href="#">Inicio</a></li>
+                <li class="nav-item"><a class="nav-link" data-section="products" href="#">Productos</a></li>
+                <li class="nav-item"><a class="nav-link" data-section="inventory" href="#">Inventario</a></li>
+                <li class="nav-item"><a class="nav-link" data-section="orders" href="#">Pedidos</a></li>
+                <li class="nav-item"><a class="nav-link" data-section="shipping" href="#">Shipping</a></li>
+            </ul>
+            <div class="d-flex align-items-center">
+                <span id="userBadge" class="role-badge mr-2" style="cursor:pointer" onclick="toggleProfile()">No autenticado</span>
+                <button class="btn btn-light btn-sm" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+    <div id="profilePopover" class="profile-popover d-none"></div>
+
+    <div class="container">
+        <section id="home" class="mt-4">
+            <div class="row justify-content-center">
+                <div class="col-md-8 mb-4">
+                    <div class="card card-shadow text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <div class="card-body d-flex flex-column align-items-center">
+                            <i class="fas fa-truck-moving mb-3" style="font-size: 42px;"></i>
+                            <h4 class="mb-2" style="font-weight:700;">Bienvenido a PROVESI</h4>
+                            <p class="mb-0" style="opacity:0.9;">Accede con tu rol para gestionar logística.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-md-6 mb-4" id="loginCard">
+                    <div class="card card-shadow">
+                        <div class="card-body">
+                            <h5 class="card-title text-center">Iniciar sesión</h5>
+                            <p class="card-text muted text-center">Autenticación con roles (ADMIN, OPERARIO, CLIENTE).</p>
+                            <div class="form-group">
+                                <label>Usuario</label>
+                                <input id="loginUser" class="form-control" placeholder="usuario">
+                            </div>
+                            <div class="form-group">
+                                <label>Contraseña</label>
+                                <input id="loginPass" type="password" class="form-control" placeholder="••••••">
+                            </div>
+                            <button class="btn btn-primary btn-block" onclick="login()">Entrar</button>
+                            <small id="authMsg" class="form-text text-muted mt-2"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="products" class="mt-4 d-none">
+            <div class="card card-shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="section-title">Catálogo de productos</h5>
+                            <p class="muted mb-2">Consulta del servicio de productos.</p>
+                        </div>
+                        <button class="btn btn-outline-primary btn-sm" onclick="loadProducts()">Actualizar</button>
+                    </div>
+                    <div id="productCreateBox" class="mt-3 d-none">
+                        <h6>Crear producto</h6>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Nombre</label>
+                                <input id="prodName" class="form-control" placeholder="Nombre del producto">
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>SKU (opcional)</label>
+                                <input id="prodSku" class="form-control" placeholder="SKU">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Precio unitario</label>
+                                <input id="prodPrice" type="number" step="0.01" class="form-control" value="0">
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Costo</label>
+                                <input id="prodCost" type="number" step="0.01" class="form-control" value="0">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Categoría</label>
+                                <input id="prodCategory" class="form-control" placeholder="Categoría">
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Proveedor (ID opcional)</label>
+                                <input id="prodSupplier" class="form-control" placeholder="ID proveedor">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label>Stock mínimo</label>
+                                <input id="prodMin" type="number" class="form-control" value="0">
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Stock máximo</label>
+                                <input id="prodMax" type="number" class="form-control" value="10000">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Descripción</label>
+                            <textarea id="prodDesc" class="form-control" rows="2" placeholder="Descripción (opcional)"></textarea>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="createProduct()">Guardar producto</button>
+                        <small id="prodMsg" class="form-text text-muted mt-2"></small>
+                        <hr>
+                    </div>
+                    <div id="productsList" class="mt-3"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="inventory" class="mt-4 d-none">
+            <div class="card card-shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="section-title">Inventario</h5>
+                            <p class="muted mb-2">Disponibilidad por producto.</p>
+                        </div>
+                        <button class="btn btn-outline-primary btn-sm" onclick="queryInventory()">Buscar</button>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <input id="inventoryName" class="form-control" placeholder="Nombre del producto">
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">Usa nombres exactos según catálogo.</small>
+                        </div>
+                    </div>
+                    <div id="inventoryResult" class="mt-3"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="orders" class="mt-4 d-none">
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card card-shadow h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="section-title">Pedidos</h5>
+                                    <p class="muted mb-2">Listado del servicio de pedidos.</p>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm" onclick="loadOrders()">Actualizar</button>
+                            </div>
+                            <div id="ordersList" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card card-shadow h-100">
+                        <div class="card-body">
+                            <h5 class="section-title">Crear pedido</h5>
+                            <p class="muted mb-2">Asignación automática de bodega.</p>
+                            <div class="form-group">
+                                <label>Producto</label>
+                    <input id="orderProduct" class="form-control" placeholder="Nombre del producto">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-4">
+                                    <label>Unidades</label>
+                                    <input id="orderUnits" type="number" class="form-control" value="1">
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label>Latitud</label>
+                                    <input id="orderLat" type="number" step="0.0001" class="form-control" value="4.6486">
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label>Longitud</label>
+                                    <input id="orderLon" type="number" step="0.0001" class="form-control" value="-74.056">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Bodega preferida (opcional)</label>
+                                <input id="orderWarehouse" class="form-control" placeholder="Nombre bodega">
+                            </div>
+                            <button class="btn btn-primary btn-block" onclick="createOrder()">Crear pedido</button>
+                            <small id="orderMsg" class="form-text text-muted mt-2"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="shipping" class="mt-4 d-none">
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card card-shadow h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="section-title">Generar guía</h5>
+                                    <p class="muted mb-2">Servicio de shipping.</p>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm" onclick="loadCarriers()">Transportadoras</button>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label>ID Pedido</label>
+                                    <input id="shipOrderId" type="number" class="form-control" value="1">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label>Transportadora</label>
+                                    <select id="shipCarrier" class="form-control"></select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Origen</label>
+                                <input id="shipOrigin" class="form-control" value="Bodega Norte, Bogotá">
+                            </div>
+                            <div class="form-group">
+                                <label>Destino</label>
+                                <input id="shipDest" class="form-control" value="Calle 80 #10-20, Bogotá">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label>Destinatario</label>
+                                    <input id="shipName" class="form-control" value="Juan Pérez">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label>Teléfono</label>
+                                    <input id="shipPhone" class="form-control" value="3001234567">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label>Documento</label>
+                                    <input id="shipDoc" class="form-control">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label>Peso (kg)</label>
+                                    <input id="shipWeight" type="number" step="0.01" class="form-control" value="2.5">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label>Dimensiones</label>
+                                    <input id="shipDims" class="form-control" value="30x20x15">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label>Valor declarado</label>
+                                    <input id="shipValue" type="number" class="form-control" value="150000">
+                                </div>
+                            </div>
+                            <button class="btn btn-primary btn-block" onclick="generateGuide()">Generar guía</button>
+                            <small id="shipMsg" class="form-text text-muted mt-2"></small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card card-shadow h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="section-title">Guías generadas</h5>
+                                    <p class="muted mb-2">Historial y estado.</p>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm" onclick="loadGuides()">Actualizar</button>
+                            </div>
+                            <div id="stats" class="d-flex flex-wrap mb-3"></div>
+                            <div id="guidesList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="toast-box">
+        <div id="toast" class="toast" data-delay="3200">
+            <div class="toast-body"></div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let currentUser = null;
+        const ACCESS = {
+            products: ['ADMIN','OPERARIO','CLIENTE'],
+            inventory: ['ADMIN','OPERARIO'],
+            orders: ['ADMIN','OPERARIO','CLIENTE'],
+            shipping: ['ADMIN','OPERARIO']
+        };
+
+        function hasAccess(sectionId) {
+            if (!currentUser) return false;
+            const allowed = ACCESS[sectionId] || [];
+            return allowed.includes(currentUser.role);
+        }
+
+        function toggleNavByRole() {
+            let firstAllowed = null;
+            document.querySelectorAll('.nav-link[data-section]').forEach(link => {
+                const section = link.dataset.section;
+                if (section === 'home') return;
+                const allowed = currentUser ? hasAccess(section) : false;
+                link.style.display = allowed ? '' : 'none';
+                link.classList.toggle('disabled', !allowed);
+                if (allowed && !firstAllowed) firstAllowed = section;
+            });
+            const active = document.querySelector('.nav-link.active');
+            const activeSection = active ? active.dataset.section : 'home';
+            if (activeSection !== 'home' && (!currentUser || !hasAccess(activeSection))) {
+                show('home');
+            }
+        }
+
+        function show(sectionId) {
+            if (sectionId !== 'home' && !hasAccess(sectionId)) {
+                toast('No tienes permisos para esta sección', false);
+                return;
+            }
+            ['home','products','inventory','orders','shipping'].forEach(id => {
+                document.getElementById(id).classList.add('d-none');
+                document.querySelector(`.nav-link[data-section="${id}"]`).classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.remove('d-none');
+            document.querySelector(`.nav-link[data-section="${sectionId}"]`).classList.add('active');
+        }
+
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                show(link.dataset.section);
+            });
+        });
+
+        function toast(msg, ok = true) {
+            const t = $('#toast');
+            t.removeClass('bg-danger bg-success').addClass(ok ? 'bg-success text-white' : 'bg-danger text-white');
+            t.find('.toast-body').text(msg);
+            t.toast('show');
+        }
+
+        function toggleProfile() {
+            const pop = document.getElementById('profilePopover');
+            if (!currentUser) {
+                toast('Inicia sesión para ver tu perfil', false);
+                return;
+            }
+            if (pop.classList.contains('d-none')) {
+                pop.classList.remove('d-none');
+            } else {
+                pop.classList.add('d-none');
+            }
+        }
+
+        function setUser(user) {
+            currentUser = user;
+            const badge = document.getElementById('userBadge');
+            const loginCard = document.getElementById('loginCard');
+            const pop = document.getElementById('profilePopover');
+            if (!user) {
+                badge.textContent = 'No autenticado';
+                toggleNavByRole();
+                if (loginCard) loginCard.classList.remove('d-none');
+                if (pop) {
+                    pop.classList.add('d-none');
+                    pop.innerHTML = '';
+                }
+                return;
+            }
+            badge.textContent = `${user.username} · ${user.role || 'ROL'}`;
+            toggleNavByRole();
+            if (loginCard) loginCard.classList.add('d-none');
+            if (pop) {
+                pop.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <strong>${user.first_name || ''} ${user.last_name || ''}</strong><br>
+                            <small>${user.email || 'email n/d'}</small>
+                        </div>
+                        <span class="badge badge-info">Rol: ${user.role || 'n/d'}</span>
+                    </div>
+                    <div class="pill">
+                        <div><strong>Usuario:</strong> ${user.username}</div>
+                        <div><strong>Tel:</strong> ${user.phone || 'n/d'}</div>
+                        <div><strong>Ciudad:</strong> ${user.city || 'n/d'}</div>
+                        <div><strong>Dirección:</strong> ${user.address || 'n/d'}</div>
+                    </div>
+                `;
+                pop.classList.add('d-none');
+            }
+        }
+
+        async function login() {
+            const username = document.getElementById('loginUser').value.trim();
+            const password = document.getElementById('loginPass').value.trim();
+            const msg = document.getElementById('authMsg');
+            msg.textContent = '';
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/login/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error de login');
+                setUser(data.user);
+                msg.textContent = 'Sesión iniciada.';
+                toast('Sesión iniciada', true);
+                show('home');
+            } catch (err) {
+                msg.textContent = err.message;
+                toast(err.message, false);
+            }
+        }
+
+        async function logout() {
+            const msg = document.getElementById('authMsg');
+            msg.textContent = '';
+            try { await fetch(`${API_BASE}/api/auth/logout/`, { method: 'POST', credentials: 'include' }); } catch (e) {}
+            setUser(null);
+            msg.textContent = 'Sesión cerrada.';
+            toast('Sesión cerrada', true);
+            show('home');
+        }
+
+        async function checkSession() {
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/profile/`, { credentials: 'include' });
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                setUser(data);
+            } catch {
+                setUser(null);
+            }
+        }
+
+        async function loadProducts() {
+            if (!hasAccess('products')) { toast('No tienes permisos', false); return; }
+            const container = document.getElementById('productsList');
+            container.innerHTML = '<div class="muted">Cargando...</div>';
+            const createBox = document.getElementById('productCreateBox');
+            if (createBox) {
+                const canCreate = currentUser && ['ADMIN','OPERARIO'].includes(currentUser.role);
+                createBox.classList.toggle('d-none', !canCreate);
+            }
+            try {
+                const res = await fetch(`${API_BASE}/api/products/`, { credentials: 'include' });
+                const data = await res.json();
+                container.innerHTML = '';
+                if (!Array.isArray(data) || !data.length) {
+                    container.innerHTML = '<div class="muted">Sin productos.</div>';
+                    return;
+                }
+                data.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'pill';
+                    div.innerHTML = `<strong>${p.name}</strong> · ${p.provider || 'Proveedor n/d'}<br><small class="text-muted">Precio: ${p.price || 'n/d'} · Categoría: ${p.category || 'n/d'}</small>`;
+                    container.appendChild(div);
+                });
+            } catch (err) {
+                container.innerHTML = '<div class="text-danger">Error al cargar productos</div>';
+                toast(err.message, false);
+            }
+        }
+
+        async function createProduct() {
+            if (!hasAccess('products')) { toast('No tienes permisos', false); return; }
+            if (!(currentUser && ['ADMIN','OPERARIO'].includes(currentUser.role))) {
+                toast('Solo ADMIN/OPERARIO pueden crear productos', false);
+                return;
+            }
+            const payload = {
+                name: document.getElementById('prodName').value.trim(),
+                sku: document.getElementById('prodSku').value.trim() || null,
+                unit_price: parseFloat(document.getElementById('prodPrice').value) || 0,
+                cost_price: parseFloat(document.getElementById('prodCost').value) || 0,
+                category: document.getElementById('prodCategory').value.trim() || null,
+                supplier: document.getElementById('prodSupplier').value ? parseInt(document.getElementById('prodSupplier').value, 10) : null,
+                min_stock: parseInt(document.getElementById('prodMin').value, 10) || 0,
+                max_stock: parseInt(document.getElementById('prodMax').value, 10) || 0,
+                description: document.getElementById('prodDesc').value.trim() || null,
+                is_active: true
+            };
+            const msg = document.getElementById('prodMsg');
+            msg.textContent = '';
+            try {
+                const res = await fetch(`${API_BASE}/api/products/create/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || (data.detail || JSON.stringify(data)));
+                msg.textContent = `Producto "${data.name}" creado`;
+                toast('Producto creado', true);
+                document.getElementById('prodName').value = '';
+                document.getElementById('prodSku').value = '';
+                document.getElementById('prodPrice').value = '0';
+                document.getElementById('prodCost').value = '0';
+                document.getElementById('prodCategory').value = '';
+                document.getElementById('prodSupplier').value = '';
+                document.getElementById('prodMin').value = '0';
+                document.getElementById('prodMax').value = '10000';
+                document.getElementById('prodDesc').value = '';
+                show('products');
+                loadProducts();
+            } catch (err) {
+                msg.textContent = err.message;
+                toast(err.message, false);
+            }
+        }
+
+        async function queryInventory() {
+            if (!hasAccess('inventory')) { toast('No tienes permisos', false); return; }
+            const name = document.getElementById('inventoryName').value.trim();
+            const container = document.getElementById('inventoryResult');
+            if (!name) {
+                container.innerHTML = '<div class="muted">Ingresa un nombre de producto.</div>';
+                return;
+            }
+            container.innerHTML = '<div class="muted">Consultando...</div>';
+            try {
+                const res = await fetch(`${API_BASE}/api/inventory/${encodeURIComponent(name)}/`, { credentials: 'include' });
+                if (!res.ok) throw new Error('Producto no encontrado en inventario');
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    if (!data.length) {
+                        container.innerHTML = '<div class="muted">Sin stock registrado.</div>';
+                        return;
+                    }
+                    const items = data.map(inv => `
+                        <div class="pill">
+                            <strong>${inv.product || name}</strong><br>
+                            <small class="text-muted">Disponible: ${inv.available_quantity ?? 'n/d'} · Bodega: ${inv.warehouse_name || inv.warehouse || 'n/d'}</small>
+                        </div>
+                    `).join('');
+                    container.innerHTML = items;
+                } else {
+                    container.innerHTML = `
+                        <div class="pill">
+                            <strong>${data.product || name}</strong><br>
+                            <small class="text-muted">Disponible: ${data.available_units ?? data.available_quantity ?? 'n/d'} · Bodega: ${data.warehouse || data.warehouse_name || 'n/d'}</small>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                container.innerHTML = '<div class="text-danger">No se pudo obtener inventario</div>';
+                toast(err.message, false);
+            }
+        }
+
+        async function loadOrders() {
+            if (!hasAccess('orders')) { toast('No tienes permisos', false); return; }
+            const container = document.getElementById('ordersList');
+            container.innerHTML = '<div class="muted">Cargando...</div>';
+            try {
+                const res = await fetch(`${API_BASE}/api/orders/`, { credentials: 'include' });
+                const data = await res.json();
+                container.innerHTML = '';
+                if (!Array.isArray(data) || !data.length) {
+                    container.innerHTML = '<div class="muted">Sin pedidos.</div>';
+                    return;
+                }
+                data.forEach(o => {
+                    const div = document.createElement('div');
+                    div.className = 'pill';
+                    div.innerHTML = `
+                        <div class="d-flex justify-content-between">
+                            <strong>Pedido #${o.id}</strong>
+                            <span class="badge badge-info">${o.status}</span>
+                        </div>
+                        <small class="text-muted">Producto: ${o.product_name} · Unidades: ${o.units} · Bodega: ${o.warehouse_name || 'n/d'}</small>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (err) {
+                container.innerHTML = '<div class="text-danger">Error al cargar pedidos</div>';
+                toast(err.message, false);
+            }
+        }
+
+        async function createOrder() {
+            if (!hasAccess('orders')) { toast('No tienes permisos', false); return; }
+            const product = document.getElementById('orderProduct').value.trim();
+            const units = parseInt(document.getElementById('orderUnits').value, 10) || 0;
+            const lat = parseFloat(document.getElementById('orderLat').value);
+            const lon = parseFloat(document.getElementById('orderLon').value);
+            const mainWarehouse = document.getElementById('orderWarehouse').value.trim() || undefined;
+            const msg = document.getElementById('orderMsg');
+            msg.textContent = '';
+            try {
+                const res = await fetch(`${API_BASE}/api/orders/create/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ product, units, lat, lon, mainWarehouse })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error creando pedido');
+                msg.textContent = `Pedido #${data.order_id} (${data.status}) asignado a ${data.assigned_warehouse || 'n/d'}`;
+                toast('Pedido creado', true);
+                loadOrders();
+            } catch (err) {
+                msg.textContent = err.message;
+                toast(err.message, false);
+            }
+        }
+
+        async function loadCarriers() {
+            if (!hasAccess('shipping')) { toast('No tienes permisos', false); return; }
+            const select = document.getElementById('shipCarrier');
+            select.innerHTML = '<option>Cargando...</option>';
+            try {
+                const res = await fetch(`${API_BASE}/api/carriers/`, { credentials: 'include' });
+                const data = await res.json();
+                select.innerHTML = '<option value="">Seleccione transportadora</option>';
+                data.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = `${c.name} (id ${c.id})`;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                select.innerHTML = '<option>Error al cargar</option>';
+                toast(err.message, false);
+            }
+        }
+
+        async function loadGuides() {
+            if (!hasAccess('shipping')) { toast('No tienes permisos', false); return; }
+            const container = document.getElementById('guidesList');
+            container.innerHTML = '<div class="muted">Cargando...</div>';
+            try {
+                const res = await fetch(`${API_BASE}/api/shipping/guides/`, { credentials: 'include' });
+                const data = await res.json();
+                container.innerHTML = '';
+                if (!Array.isArray(data) || !data.length) {
+                    container.innerHTML = '<div class="muted">Sin guías.</div>';
+                    return;
+                }
+                data.forEach(g => {
+                    const div = document.createElement('div');
+                    div.className = 'pill';
+                    div.innerHTML = `
+                        <div class="d-flex justify-content-between">
+                            <strong>Guía #${g.id}</strong>
+                            <span class="badge badge-secondary">${g.status_display || g.status}</span>
+                        </div>
+                        <small class="text-muted">Pedido: ${g.order_id} · Transportadora: ${g.carrier_name || g.carrier_id}</small><br>
+                        <small class="text-muted">N° Guía: ${g.guide_number || 'pendiente'} · Tracking: ${g.carrier_tracking_number || 'n/a'}</small>
+                        ${g.error_message ? `<div class="text-danger mt-1">Error: ${g.error_message}</div>` : ''}
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (err) {
+                container.innerHTML = '<div class="text-danger">Error al cargar guías</div>';
+                toast(err.message, false);
+            }
+            loadGuideStats();
+        }
+
+        async function loadGuideStats() {
+            const stats = document.getElementById('stats');
+            stats.innerHTML = '';
+            try {
+                const res = await fetch(`${API_BASE}/api/shipping/guides/statistics/`, { credentials: 'include' });
+                const data = await res.json();
+                stats.innerHTML = `
+                    <div class="badge badge-light mr-2 mb-2">Total: ${data.total_guides || 0}</div>
+                    <div class="badge badge-success mr-2 mb-2">Generadas: ${data.generated || 0}</div>
+                    <div class="badge badge-danger mr-2 mb-2">Fallidas: ${data.failed || 0}</div>
+                    <div class="badge badge-info mr-2 mb-2">Éxito: ${data.success_rate || 0}%</div>
+                `;
+            } catch (err) {
+                stats.innerHTML = '<div class="text-danger">Sin estadísticas</div>';
+            }
+        }
+
+        async function generateGuide() {
+            if (!hasAccess('shipping')) { toast('No tienes permisos', false); return; }
+            const payload = {
+                order_id: parseInt(document.getElementById('shipOrderId').value, 10),
+                carrier_id: parseInt(document.getElementById('shipCarrier').value, 10),
+                origin_address: document.getElementById('shipOrigin').value,
+                destination_address: document.getElementById('shipDest').value,
+                recipient_name: document.getElementById('shipName').value,
+                recipient_phone: document.getElementById('shipPhone').value,
+                recipient_document: document.getElementById('shipDoc').value,
+                weight_kg: parseFloat(document.getElementById('shipWeight').value),
+                dimensions: document.getElementById('shipDims').value,
+                declared_value: parseFloat(document.getElementById('shipValue').value)
+            };
+            const msg = document.getElementById('shipMsg');
+            msg.textContent = 'Generando...';
+            try {
+                const res = await fetch(`${API_BASE}/api/shipping/guides/generate/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.error || 'Error generando guía');
+                msg.textContent = `Guía ${data.guide.guide_number} creada (${data.guide.status_display})`;
+                toast('Guía generada', true);
+                loadGuides();
+            } catch (err) {
+                msg.textContent = err.message;
+                toast(err.message, false);
+            }
+        }
+
+        (async function init() {
+            setUser(null);
+            show('home');
+            await checkSession();
+            if (hasAccess('shipping')) {
+                loadCarriers();
+                loadGuides();
+            }
+            if (hasAccess('products')) {
+                loadProducts();
+            }
+        })();
+    </script>
+</body>
+</html>

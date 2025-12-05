@@ -1,12 +1,15 @@
 """
 API Gateway para enrutar peticiones a los microservicios
 """
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify, session, send_from_directory
 from flask_cors import CORS
 import requests
 import os
 
-app = Flask(__name__)
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, '..', 'frontend'))
+
+app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 app.secret_key = os.environ.get('SECRET_KEY', 'gateway-secret-key')
 CORS(app, supports_credentials=True)
 
@@ -66,6 +69,11 @@ def product_list():
 def product_detail(product_id):
     """Detalles de un producto"""
     return forward_request(PRODUCTS_SERVICE_URL, f'/api/products/{product_id}/', 'GET')
+
+@app.route('/api/products/create/', methods=['POST'])
+def product_create():
+    """Crear un producto"""
+    return forward_request(PRODUCTS_SERVICE_URL, '/api/products/create/', 'POST')
 
 @app.route('/api/products/name/<path:product_name>/', methods=['GET'])
 def product_by_name(product_name):
@@ -154,7 +162,7 @@ def shipping_guide_by_order(order_id):
 
 @app.route('/api/shipping/guides/generate/', methods=['POST'])
 def generate_guide():
-    """Generar una guía de envío (ASR: máximo 8 segundos)"""
+    """Generar una guía de envío"""
     return forward_request(SHIPPING_SERVICE_URL, '/api/guides/generate/', 'POST')
 
 @app.route('/api/shipping/guides/statistics/', methods=['GET'])
@@ -166,6 +174,14 @@ def guide_statistics():
 def health():
     """Health check del API Gateway"""
     return jsonify({'status': 'ok', 'service': 'api-gateway'}), 200
+
+@app.route('/')
+def index():
+    """Servir el frontend"""
+    try:
+        return send_from_directory(FRONTEND_DIR, 'index.html')
+    except:
+        return jsonify({'message': 'Frontend no disponible. Usa los endpoints de la API.'}), 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)
