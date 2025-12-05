@@ -1,0 +1,216 @@
+version: '3.8'
+
+services:
+  # Base de datos para Auth Service
+  db-auth:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Base de datos para Products Service
+  db-products:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: products_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - products_db_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Base de datos para Inventory Service
+  db-inventory:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - inventory_db_data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Base de datos para Orders Service
+  db-orders:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: orders_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - orders_db_data:/var/lib/postgresql/data
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Base de datos para Shipping Service
+  db-shipping:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: shipping_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - shipping_db_data:/var/lib/postgresql/data
+    ports:
+      - "5437:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Auth Service
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "8001:8001"
+    environment:
+      DB_NAME: auth_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: db-auth
+      DB_PORT: "5432"
+      DEBUG: "True"
+    depends_on:
+      db-auth:
+        condition: service_healthy
+    volumes:
+      - ./auth-service:/app
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8001"
+
+  # Products Service
+  products-service:
+    build: ./products-service
+    ports:
+      - "8002:8002"
+    environment:
+      DB_NAME: products_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: db-products
+      DB_PORT: "5432"
+      DEBUG: "True"
+    depends_on:
+      db-products:
+        condition: service_healthy
+    volumes:
+      - ./products-service:/app
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8002"
+
+  # Inventory Service
+  inventory-service:
+    build: ./inventory-service
+    ports:
+      - "8003:8003"
+    environment:
+      DB_NAME: inventory_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: db-inventory
+      DB_PORT: "5432"
+      DEBUG: "True"
+      PRODUCTS_SERVICE_URL: http://products-service:8002
+    depends_on:
+      - db-inventory
+      - products-service
+    volumes:
+      - ./inventory-service:/app
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8003"
+
+  # Orders Service
+  orders-service:
+    build: ./orders-service
+    ports:
+      - "8004:8004"
+    environment:
+      DB_NAME: orders_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: db-orders
+      DB_PORT: "5432"
+      DEBUG: "True"
+      AUTH_SERVICE_URL: http://auth-service:8001
+      PRODUCTS_SERVICE_URL: http://products-service:8002
+      INVENTORY_SERVICE_URL: http://inventory-service:8003
+    depends_on:
+      - db-orders
+      - auth-service
+      - products-service
+      - inventory-service
+    volumes:
+      - ./orders-service:/app
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8004"
+
+  # Shipping Service
+  shipping-service:
+    build: ./shipping-service
+    ports:
+      - "8005:8005"
+    environment:
+      DB_NAME: shipping_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: db-shipping
+      DB_PORT: "5432"
+      DEBUG: "True"
+      ORDERS_SERVICE_URL: http://orders-service:8004
+      INVENTORY_SERVICE_URL: http://inventory-service:8003
+    depends_on:
+      db-shipping:
+        condition: service_healthy
+    volumes:
+      - ./shipping-service:/app
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8005"
+
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8001
+      PRODUCTS_SERVICE_URL: http://products-service:8002
+      INVENTORY_SERVICE_URL: http://inventory-service:8003
+      ORDERS_SERVICE_URL: http://orders-service:8004
+      SHIPPING_SERVICE_URL: http://shipping-service:8005
+    depends_on:
+      - auth-service
+      - products-service
+      - inventory-service
+      - orders-service
+      - shipping-service
+
+volumes:
+  auth_db_data:
+  products_db_data:
+  inventory_db_data:
+  orders_db_data:
+  shipping_db_data:
+
